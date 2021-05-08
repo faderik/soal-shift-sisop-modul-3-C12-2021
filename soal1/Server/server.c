@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
 
 #define PORT 8080
 #define BUFFER_LENGTH 1024
@@ -15,9 +19,31 @@
 #define LOGIN_CODE "1"
 #define REGISTER_CODE "2"
 
-void handle_client(char buffer[], int socketfd, int valread)
+void uplodFile(int sock, char filePth[])
 {
-    // do something
+    int fd, remData;
+    off_t offset;
+    int sentBytes = 0;
+    struct stat file_stat;
+
+    fd = open(filePth, O_RDONLY);
+    if (fstat(fd, &file_stat) < 0)
+        printf("errorrr");
+
+    char file_size[50];
+    sprintf(file_size, "%ld", file_stat.st_size);
+
+    send(sock, file_size, sizeof(file_size), 0);
+    fprintf(stdout, "Sent file size %s bytes\n", file_size);
+
+    remData = file_stat.st_size;
+    offset = 0;
+    /* Sending file data */
+    while (((sentBytes = sendfile(sock, fd, &offset, BUFSIZ)) > 0) && (remData > 0))
+    {
+        remData -= sentBytes;
+    }
+    close(fd);
 }
 void clear_buffer(char *b)
 {
@@ -79,7 +105,7 @@ void downFile(int sock, char fileName[])
 
     recv(sock, bufFile, BUFSIZ, 0);
     fileSize = atoi(bufFile);
-    fprintf(stdout, "\nFile size : %d\n", fileSize);
+    fprintf(stdout, "File size : %d\n", fileSize);
 
     sprintf(filePth, "FILES/%s", fileName);
     printf("FILE PATH : %s\n", filePth);
@@ -128,6 +154,24 @@ int logIn(int sock)
     return isLogin;
 }
 
+int checkFile(char fileName[])
+{
+    FILE *fp = fopen("files.tsv", "r");
+    char ss[100];
+
+    while (fscanf(fp, "%s", ss) != EOF)
+    {
+        if (strstr(ss, fileName) != NULL)
+        {
+            printf("File : %s EXIST\n", fileName);
+            return 1;
+        }
+    }
+    printf("File : %s NOT FOUND\n", fileName);
+
+    return 0;
+}
+
 int reg(int socketfd)
 {
     FILE *fp;
@@ -170,13 +214,14 @@ int main(int argc, char const *argv[])
     int opt = 1;
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
+    char cmd[2] = {0};
 
     printf("SERVER EMPAN\n");
     char cwd[100];
     if (getcwd(cwd, sizeof(cwd)) != NULL)
     {
         printf("Current working dir: %s\n", cwd);
-        mkdir("FILES", 0777);
+        // mkdir("FILES", 0777);
     }
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -217,8 +262,8 @@ int main(int argc, char const *argv[])
 
     while (1)
     {
-        memset(buffer, 0, sizeof buffer); // reset buffer
-        // clear_buffer(buffer);
+        // memset(buffer, 0, sizeof buffer); // reset buffer
+        clear_buffer(buffer);
 
         if (!isLoggedIn)
         {
@@ -243,31 +288,59 @@ int main(int argc, char const *argv[])
         }
         else if (isLoggedIn)
         {
-            char *buf[3];
-            int i = 0;
-            // clear_buffer(buffer);
-            valread = read(new_socket, buffer, BUFFER_LENGTH);
-
-            buf[i] = strtok(buffer, "\t");
-            while (buf[i] != NULL)
+            read(new_socket, cmd, 2);
+            printf("Command : %s\n", cmd);
+            if (strstr(cmd, "a"))
             {
-                buf[++i] = strtok(NULL, "\t");
+                char *buf[3];
+                int i = 0;
+                // clear_buffer(buffer);
+                valread = read(new_socket, buffer, BUFFER_LENGTH);
+
+                buf[i] = strtok(buffer, "\t");
+                while (buf[i] != NULL)
+                {
+                    buf[++i] = strtok(NULL, "\t");
+                }
+
+                // -----------------------------------------------------------
+                downFile(new_socket, buf[0]);
+                // -----------------------------------------------------------
+
+                FILE *fp;
+                fp = fopen("files.tsv", "a+");
+
+                fprintf(fp, "%s\t%s\t%s\n", buf[0], buf[1], buf[2]);
+                send(new_socket, "s", BUFFER_LENGTH, 0);
+
+                //--
+                fclose(fp);
             }
-            printf("||%s||%s||%s||\n", buf[0], buf[1], buf[2]);
+            else if (strstr(cmd, "d"))
+            {
+                valread = read(new_socket, buffer, BUFFER_LENGTH);
 
-            // -----------------------------------------------------------
-            downFile(new_socket, buf[0]);
-            // -----------------------------------------------------------
-
-            printf("||%s||\n", buffer);
-            FILE *fp;
-            fp = fopen("files.tsv", "a+");
-
-            fprintf(fp, "%s\t%s\t%s\n", buf[0], buf[1], buf[2]);
-            send(new_socket, "s", BUFFER_LENGTH, 0);
-
-            //--
-            fclose(fp);
+                char *buf[2];
+                int i = 0;
+                buf[i] = strtok(buffer, " ");
+                while (buf[i] != NULL)
+                {
+                    buf[++i] = strtok(NULL, " ");
+                }
+                printf("||%s||%s||\n", buf[0], buf[1]);
+                char filePth[100];
+                sprintf(filePth, "FILES/%s", buf[1]);
+                if (checkFile(buf[1]))
+                {
+                    send(new_socket, "s", BUFFER_LENGTH, 0);
+                    uplodFile(new_socket, filePth);
+                }
+                else
+                {
+                    send(new_socket, "x", BUFFER_LENGTH, 0);
+                    continue;
+                }
+            }
         }
     }
 

@@ -108,8 +108,42 @@ void uplodFile(int sock, char filePth[])
     {
         remData -= sentBytes;
     }
-    printf("mari ngirim\n");
     close(fd);
+}
+
+void downFile(int sock, char fileName[])
+{
+    int fileSize;
+    FILE *rcvdFile;
+    int i = 0;
+    int remData;
+    ssize_t len;
+    char bufFile[BUFSIZ];
+    char filePth[100];
+    clear_buffer(bufFile);
+
+    recv(sock, bufFile, BUFSIZ, 0);
+    fileSize = atoi(bufFile);
+    fprintf(stdout, "File size : %d\n", fileSize);
+
+    sprintf(filePth, "%s", fileName);
+    printf("FILE PATH : %s\n", filePth);
+    rcvdFile = fopen(filePth, "w");
+    if (rcvdFile == NULL)
+    {
+        printf("Failed to open file\n");
+
+        exit(EXIT_FAILURE);
+    }
+
+    remData = fileSize;
+
+    while ((remData > 0) && ((len = recv(sock, bufFile, BUFSIZ, 0)) > 0))
+    {
+        fwrite(bufFile, sizeof(char), len, rcvdFile);
+        remData -= len;
+    }
+    fclose(rcvdFile);
 }
 
 int main(int argc, char const *argv[])
@@ -142,7 +176,7 @@ int main(int argc, char const *argv[])
     }
 
     int isLoggedIn = 0;
-    char cmd[10];
+    char cmd[100];
     char pub[100];
     char thn[4];
     char filePth[100];
@@ -150,6 +184,7 @@ int main(int argc, char const *argv[])
     {
         char pkt[1024];
         clear_buffer(buffer);
+        clear_buffer(pkt);
 
         if (!isLoggedIn)
         {
@@ -186,10 +221,13 @@ int main(int argc, char const *argv[])
             sleep(1);
 
             printf("Enter command : ");
-            scanf("%s", cmd);
+            scanf(" %[^\n]c", cmd);
+
             if (!strcmp(cmd, "add"))
             {
-                printf("cmd : add\n");
+                printf("Command : add\n");
+                send(sock, "a", 2, 0);
+
                 printf("Publisher: ");
                 scanf("%s", pub);
                 printf("Tahun Publikasi: ");
@@ -210,12 +248,49 @@ int main(int argc, char const *argv[])
                 valread = read(sock, buffer, BUFFER_LENGTH);
                 if (buffer[0] == 's')
                 {
-                    printf("data received by server\n");
+                    printf("Data received by server ############################\n");
                 }
                 else
                 {
                     printf("error\n");
                 }
+            }
+            else if (strstr(cmd, "download") != NULL)
+            {
+                printf("Command : download\n");
+                send(sock, "d", 2, 0);
+
+                char *buf[2];
+                int i = 0;
+                buf[i] = strtok(cmd, " ");
+                while (buf[i] != NULL)
+                {
+                    buf[++i] = strtok(NULL, " ");
+                }
+
+                sprintf(pkt, "%s %s", buf[0], buf[1]);
+                printf("||%s||\n", pkt);
+                send(sock, pkt, sizeof(pkt), 0);
+
+                //-----------------------------------
+                // downFile(sock);
+                //-----------------------------------------
+
+                valread = read(sock, buffer, BUFFER_LENGTH);
+                if (buffer[0] == 's')
+                {
+                    printf("File Found\n");
+                    downFile(sock, buf[1]);
+                }
+                else
+                {
+                    printf("FILE NOT FOUND\n");
+                }
+            }
+            else if (strstr(cmd, "delete") != NULL)
+            {
+                rintf("Command : delete\n");
+                send(sock, "r", 2, 0);
             }
         }
     }
