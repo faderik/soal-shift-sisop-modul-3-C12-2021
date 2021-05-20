@@ -9,17 +9,23 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
+
 #define PORT 8080
-#define SEPARATOR ":"
-#define SUCCESS_CODE "1"
-#define FAILED_CODE "0"
-#define LOGIN_CODE "1"
-#define REGISTER_CODE "2"
-#define BUFFER_LENGTH 1024
+#define HANDSHAKE "800"
+#define SUCCESS "200"
+
+int login(int);
+void reg(int);
+void clear_buffer(char *);
+void uploadFile(int, char a[]);
+void downFile(int, char a[]);
+int create_socket();
+void menuApp(int);
+void connect_to_server(int);
 
 int logIn(int sock)
 {
-    char buffer[BUFFER_LENGTH];
+    char buffer[BUFSIZ];
     char uname[100];
     char pwd[100];
     char cred[201];
@@ -50,7 +56,7 @@ int logIn(int sock)
 
 void reg(int sock)
 {
-    char buffer[BUFFER_LENGTH];
+    char buffer[BUFSIZ];
     char uname[100];
     char pwd[100];
     char cred[201];
@@ -146,15 +152,15 @@ void downFile(int sock, char fileName[])
     fclose(rcvdFile);
 }
 
-int main(int argc, char const *argv[])
+int create_socket()
 {
     struct sockaddr_in address;
-    int sock = 0, valread;
+    int socketfd, valread;
     struct sockaddr_in serv_addr;
-    char buffer[1024] = {0};
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    char buffer[BUFSIZ] = {0};
+    if ((socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("\n Socket creation error \n");
+        fprintf(stdout, "\n Socket creation error \n");
         return -1;
     }
 
@@ -165,28 +171,36 @@ int main(int argc, char const *argv[])
 
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
     {
-        printf("\nInvalid address/ Address not supported \n");
+        fprintf(stdout, "\nInvalid address/ Address not supported \n");
         return -1;
     }
 
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (connect(socketfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        printf("\nConnection Failed \n");
+        fprintf(stdout, "\nConnection Failed \n");
         return -1;
     }
 
+    return socketfd;
+}
+
+void menuApp(int sock)
+{
+    char buffer[BUFSIZ];
+    int valread;
     int isLoggedIn = 0;
-    char cmd[100];
+    char cmd[BUFSIZ];
+    char pkt[BUFSIZ];
     char pub[100];
     char thn[4];
     char filePth[100];
+
     while (1)
     {
-        char pkt[1024];
         clear_buffer(buffer);
         clear_buffer(pkt);
 
-        if (!isLoggedIn)
+        if (isLoggedIn == 0)
         {
             printf("== Chose One (Case UNsensitive) ==\nL : Login\nR : Register\n");
             printf("Enter Your Choise : ");
@@ -212,7 +226,7 @@ int main(int argc, char const *argv[])
                 printf("Choice not valid\n");
             }
         }
-        else if (isLoggedIn)
+        else if (isLoggedIn == 1)
         {
             int fd, remData;
             off_t offset;
@@ -226,16 +240,18 @@ int main(int argc, char const *argv[])
             if (!strcmp(cmd, "add"))
             {
                 printf("Command : add\n");
-                send(sock, "a", 2, 0);
+                send(sock, "a", BUFSIZ, 0);
+                char temp[100];
 
                 printf("Publisher: ");
                 scanf("%s", pub);
+                strcpy(temp, pub); //opoiki
                 printf("Tahun Publikasi: ");
                 scanf("%s", thn);
                 printf("Filepath: ");
                 scanf("%s", filePth);
 
-                sprintf(pkt, "%s\t%s\t%s", filePth, pub, thn);
+                sprintf(pkt, "%s\t%s\t%s", filePth, temp, thn);
 
                 // strcpy(pkt, "path.eks\tpubliser\ttahunpub");
                 printf("||%s||\n", pkt);
@@ -245,7 +261,7 @@ int main(int argc, char const *argv[])
                 uplodFile(sock, filePth);
                 //-----------------------------------------
 
-                valread = read(sock, buffer, BUFFER_LENGTH);
+                valread = read(sock, buffer, BUFSIZ);
                 if (buffer[0] == 's')
                 {
                     printf("Data received by server ############################\n");
@@ -258,7 +274,7 @@ int main(int argc, char const *argv[])
             else if (strstr(cmd, "download") != NULL)
             {
                 printf("Command : download\n");
-                send(sock, "d", 2, 0);
+                send(sock, "d", BUFSIZ, 0);
 
                 char *buf[2];
                 int i = 0;
@@ -268,7 +284,7 @@ int main(int argc, char const *argv[])
                     buf[++i] = strtok(NULL, " ");
                 }
 
-                sprintf(pkt, "%s %s", buf[0], buf[1]);
+                sprintf(pkt, "%s", buf[1]);
                 printf("||%s||\n", pkt);
                 send(sock, pkt, sizeof(pkt), 0);
 
@@ -276,7 +292,7 @@ int main(int argc, char const *argv[])
                 // downFile(sock);
                 //-----------------------------------------
 
-                valread = read(sock, buffer, BUFFER_LENGTH);
+                valread = read(sock, buffer, BUFSIZ);
                 if (buffer[0] == 's')
                 {
                     printf("File Found\n");
@@ -289,11 +305,125 @@ int main(int argc, char const *argv[])
             }
             else if (strstr(cmd, "delete") != NULL)
             {
-                rintf("Command : delete\n");
-                send(sock, "r", 2, 0);
+                printf("Command : delete\n");
+                send(sock, "r", BUFSIZ, 0);
+
+                char *buf[2];
+                int i = 0;
+                buf[i] = strtok(cmd, " ");
+                while (buf[i] != NULL)
+                {
+                    buf[++i] = strtok(NULL, " ");
+                }
+
+                sprintf(pkt, "%s", buf[1]);
+                printf("||%s||\n", pkt);
+                send(sock, pkt, sizeof(pkt), 0);
+
+                //-----------------------------------
+                // deleteFile(sock);
+                //-----------------------------------------
+
+                valread = read(sock, buffer, BUFSIZ);
+                if (buffer[0] == 's')
+                {
+                    printf("File Found\n");
+                    // deleteFile(sock, buf[1]);
+                }
+                else
+                {
+                    printf("FILE NOT FOUND\n");
+                }
+            }
+            else if (!strcmp(cmd, "see"))
+            {
+                printf("Command : see\n");
+                send(sock, "l", BUFSIZ, 0);
+
+                read(sock, buffer, BUFSIZ);
+                printf("%s", buffer);
+                clear_buffer(buffer);
+
+                valread = read(sock, buffer, BUFSIZ);
+                if (buffer[0] == 's')
+                {
+                    printf("SEE Completed\n");
+                    // deleteFile(sock, buf[1]);
+                }
+                else
+                {
+                    printf("error seeing serever\n");
+                }
+            }
+            else if (strstr(cmd, "find") != NULL)
+            {
+                printf("Command : find\n");
+                send(sock, "f", BUFSIZ, 0);
+
+                char *buf[2];
+                int i = 0;
+                buf[i] = strtok(cmd, " ");
+                while (buf[i] != NULL)
+                {
+                    buf[++i] = strtok(NULL, " ");
+                }
+
+                sprintf(pkt, "%s", buf[1]);
+                printf("||%s||\n", pkt);
+                send(sock, pkt, sizeof(pkt), 0);
+
+                read(sock, buffer, BUFSIZ);
+                printf("%s", buffer);
+                clear_buffer(buffer);
+
+                valread = read(sock, buffer, BUFSIZ);
+                if (buffer[0] == 's')
+                {
+                    printf("FIND Completed\n");
+                    // deleteFile(sock, buf[1]);
+                }
+                else
+                {
+                    printf("error seeing serever\n");
+                }
+            }
+            else if (strstr(cmd, "end") != NULL)
+            {
+                send(sock, "n", BUFSIZ, 0);
+                break;
+            }
+            else
+            {
+                fprintf(stdout, "Command not valid\n");
             }
         }
     }
+    printf("BREAKED !\n");
+}
+
+void connect_to_server(int socketfd)
+{
+    char buffer[BUFSIZ];
+    int valread;
+
+    send(socketfd, HANDSHAKE, strlen(HANDSHAKE), 0);
+
+    fprintf(stdout, "Menunggu koneksi dari server...\n");
+
+    clear_buffer(buffer);
+    valread = read(socketfd, buffer, BUFSIZ);
+    fprintf(stdout, "Terhubung dengan server\n");
+
+    menuApp(socketfd);
+}
+
+int main(int argc, char const *argv[])
+{
+    int socketfd = create_socket();
+    if (socketfd == -1)
+        exit(0);
+
+    connect_to_server(socketfd);
 
     return 0;
 }

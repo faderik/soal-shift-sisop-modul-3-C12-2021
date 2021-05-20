@@ -1,1 +1,0 @@
-print("Ini adalah fileLagi.py")
