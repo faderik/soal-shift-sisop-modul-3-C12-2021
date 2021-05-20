@@ -14,9 +14,7 @@ bool checkExistAndRegFile(char *basePath);
 void *moveFile(void *arg);
 int listFilesRecursively(char *basePath, int *fileCount);
 
-
 char fileList[2048][PATH_MAX];
-
 
 int main(int argc,char* argv[]){
     char baseDir[PATH_MAX];
