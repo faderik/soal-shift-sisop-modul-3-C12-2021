@@ -318,3 +318,84 @@ void *process(void* arg){
     
 
 ```
+
+
+### Sub Soal C
+
+Pada soal ini, kita diminta untuk menggunakan thread dalam mengecek 5 proses teratas dalam program kita. Untuk itu digunakan 3 fungsi yang telah dicantumkan pada soal shift, yakni "ps aux", "sort -nrk 3,3", dan "head -5". Di bawah ini merupakan program nya yang dikombinasikan dengan pipe IPC.
+
+``` cpp
+int main() {
+  int status;
+
+  int fd1[2];
+  int fd2[2];
+  pid_t p;
+
+if (pipe(fd1)==-1) { 
+	fprintf(stderr, "Pipe Failed" ); 
+	return 1; 
+	} 
+	if (pipe(fd2)==-1) { 
+   	 fprintf(stderr, "Pipe Failed" ); 
+	 return 1; 
+	} 
+
+  p = fork();
+
+  // buat ngefork (ps aux)
+  if (p < 0) {
+    exit(EXIT_FAILURE);
+  }
+
+  else if (p == 0) {
+
+    dup2(fd1[1], STDOUT_FILENO);
+    close(fd1[0]);
+    close(fd1[1]);
+
+    char *argv[] = {"ps", "aux", NULL};
+    execv("/bin/ps", argv);
+  } 
+
+    else { //parent
+
+    p = fork();
+    if (p < 0) 
+      exit(EXIT_FAILURE);
+    
+    if (p == 0) {
+      dup2(fd1[0], STDIN_FILENO);
+      dup2(fd2[1], STDOUT_FILENO);
+	
+      close(fd1[0]);
+      close(fd1[1]);
+      close(fd2[0]);
+      close(fd2[1]);
+
+      char *argv[] = {"sort", "-nrk", "3,3", NULL};
+      execv("/usr/bin/sort", argv);
+    } 
+	
+      else {
+
+      dup2(fp2[0], STDIN_FILENO);
+
+      close(fd1[0]);
+      close(fd1[1]);
+      close(fd2[0]);
+      close(fd2[1]);
+
+      char *argv[] = {"head", "-5", NULL};
+      execv("/usr/bin/head", argv);
+    }
+  
+}
+
+```
+
+
+
+
+
+
