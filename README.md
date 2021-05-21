@@ -830,6 +830,11 @@ printf("Product of entered Matrix:\n");
 
 ```
 
+<p align="center">
+  <img src="soal2/img/soal2a.jpg" width="800">
+  <em>Program soal2a.c saat dijalankan</em>
+</p>
+
 
 ### Sub Soal B
 
@@ -917,6 +922,11 @@ void *process(void* arg){
 
 ```
 
+<p align="center">
+  <img src="soal2/img/soal2b.jpg" width="800">
+  <em>Program soal2b.c saat dijalankan</em>
+</p>
+
 
 ### Sub Soal C
 
@@ -992,7 +1002,15 @@ if (pipe(fd1)==-1) {
 
 ```
 
-
+<p align="center">
+  <img src="soal2/img/soal2c.jpg" width="800">
+  <em>Program soal2c.c saat dijalankan</em>
+</p>
 
 
 ## Soal 3
+
+
+
+
+
