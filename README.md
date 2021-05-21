@@ -834,6 +834,7 @@ printf("Product of entered Matrix:\n");
   <img src="soal2/img/soal2a.jpg" width="800">
 	<br>
   <em>Program soal2a.c saat dijalankan</em>
+  <br><br>
 </p>
 
 
@@ -927,6 +928,7 @@ void *process(void* arg){
   <img src="soal2/img/soal2b.jpg" width="800">
 	<br>
   <em>Program soal2b.c saat dijalankan</em>
+<br><br>
 </p>
 
 
@@ -1008,6 +1010,7 @@ if (pipe(fd1)==-1) {
   <img src="soal2/img/soal2c.jpg" width="800">
 	<br>
   <em>Program soal2c.c saat dijalankan</em>
+<br><br>
 </p>
 
 
