@@ -235,4 +235,27 @@ printf("Product of entered Matrix:\n");
 
 ### Sub Soal B
 
-Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub soal 2a](README.md#sub-soal-a) dengan suatu matrix matrixC yang memiliki ukuran yang sama (4 * 6). Pada sub soal ini, kita kembali diminta memasukkan isi dari matrixC. Nantinya, setiap elemen matrix hasil operasi sub soal sebelumnya akan dilakukan operasi pengurangan dengan setiap elemen matrixC. 
+Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub soal 2a](README.md#sub-soal-a) dengan suatu matrix matrixC yang memiliki ukuran yang sama (4 * 6). Pada sub soal ini, kita kembali diminta memasukkan isi dari matrixC. Nantinya, faktorial dari setiap elemen matrix hasil operasi sub soal sebelumnya akan dilakukan operasi pembagian dengan faktorial dari setiap elemen matrixC. 
+
+#### Memasukkan matrixC
+
+    printf("Enter the elements of MatrixC\n");
+
+    for (i = 0 ; i < 4 ; i++ ){
+    	for ( j = 0 ; j < 3 ; j++ ){
+      		scanf("%d", &MatrixC[i][j]);
+	}
+    }
+    
+#### Melakukan pengecekan
+
+    for(i = 0; i < 4; i++){
+        for(j = 0; j < 6; j++){
+	    nullCheck = false;
+            long long *val = malloc(sizeof(long long[4][6]));
+            *val = value[i][j];
+
+            subs = value[i][j] - MatrixC[i][j];			// Melakukan pengurangan tiap elemen antar matrix
+            if(value[i][j] == 0 || MatrixC[i][j] == 0) 
+	    	nullCheck = true;				// Apabila ada elemen yang 0, 
+#### 
