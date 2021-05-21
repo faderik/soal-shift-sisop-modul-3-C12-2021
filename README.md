@@ -764,6 +764,14 @@ fprintf(flog, "Hapus : %s (%s)\n", buffer, cred);
 fclose(flog);
 ```
 
+## Kendala Pengerjaan
+
+1. Soal cukup banyak sehingga memakan waktu
+2. Seringkali posisi read dan send yang tidak singkron sehingga data yang diterima bukan data yang seharusnya diterima
+3. Sempat bingung dimana letak implementasi thread nya
+4. Sering menemui masalah bug/error string pada c yang tidak tau penyebabnya
+
+
 ## Soal 2
 
 ### Sub Soal A
