@@ -9,8 +9,7 @@
 ## SOAL 1
 Pada soal ini, diminta untuk menangani program server-client dengan socket programming dan thread.
 
-## A
-Pada saat client tersambung dengan server, terdapat dua pilihan pertama, yaitu register dan login. Jika memilih register, client akan diminta input id dan passwordnya untuk dikirimkan ke server. User juga dapat melakukan login. Login berhasil jika id dan password yang dikirim dari aplikasi client sesuai dengan list akun yang ada didalam aplikasi server. Sistem ini juga dapat menerima multi-connections. Koneksi terhitung ketika aplikasi client tersambung dengan server. Jika terdapat 2 koneksi atau lebih maka harus menunggu sampai client pertama keluar untuk bisa melakukan login dan mengakses aplikasinya. Keverk menginginkan lokasi penyimpanan id dan password pada file bernama akun.txt dengan format : `id:password`
+A. Pada saat client tersambung dengan server, terdapat dua pilihan pertama, yaitu register dan login. Jika memilih register, client akan diminta input id dan passwordnya untuk dikirimkan ke server. User juga dapat melakukan login. Login berhasil jika id dan password yang dikirim dari aplikasi client sesuai dengan list akun yang ada didalam aplikasi server. Sistem ini juga dapat menerima multi-connections. Koneksi terhitung ketika aplikasi client tersambung dengan server. Jika terdapat 2 koneksi atau lebih maka harus menunggu sampai client pertama keluar untuk bisa melakukan login dan mengakses aplikasinya. Keverk menginginkan lokasi penyimpanan id dan password pada file bernama akun.txt dengan format : `id:password`
 <p align="center">
   <img src="soal1/login.png" width="800">
 </p>
@@ -172,132 +171,11 @@ char *logIn(int sock)
     return cred;
 }
 ```
-
-## B
-Sistem memiliki sebuah database yang bernama files.tsv. Isi dari files.tsv ini adalah path file saat berada di server, publisher, dan tahun publikasi. Setiap penambahan dan penghapusan file pada folder file yang bernama  FILES pada server akan memengaruhi isi dari files.tsv. Folder FILES otomatis dibuat saat server dijalankan.
-```c
-mkdir('FILES', 0777)
-```
-pembuatan file `files.tsv` dan penjelasan lebih lengkap ada pada sub soal selanjutnya
-
-## C
-Program diminta membuat fitur agar client dapat menambah file baru ke dalam server. Pertama client mengirimkan input ke server dengan perintah `add`. Kemudian, dari aplikasi client akan dimasukan data buku tersebut (perlu diingat bahwa Filepath ini merupakan path file yang akan dikirim ke server). Lalu client nanti akan melakukan pengiriman file ke aplikasi server dengan menggunakan socket. Ketika file diterima di server, maka row dari files.tsv akan bertambah sesuai dengan data terbaru yang ditambahkan.
-### Client
-- pada Fungsi utama program menerima input command dari user dan mencocokan dengan comman yang ada.
-```c
-printf("Enter command : ");
-scanf(" %[^\n]c", cmd);
-```
-
-- Jika command yang dimasukan user adalah `add` maka program akan meminta input data buku, lalu mengirim data tersebut ke server. Setelah itu client menjalankan fungsi `uploadFile()` untuk mengirim file terkait ke server.
-- Fungsi `uploadFile()` secara garis besar mengambil character dalam file dari awal hingga ahir dan menyimpannya dalam sebuah string untuk dikirim ke server melalui socket.
-```c
-...
-if (!strcmp(cmd, "add"))
-{
-    printf("Command : add\n");
-    send(sock, "a", BUFSIZ, 0);
-    char temp[100];
-
-    printf("Publisher: ");
-    scanf("%s", pub);
-    strcpy(temp, pub);
-    printf("Tahun Publikasi: ");
-    scanf("%s", thn);
-    printf("Filepath: ");
-    scanf("%s", filePth);
-
-    sprintf(pkt, "%s\t%s\t%s", filePth, temp, thn);
-
-    printf("||%s||\n", pkt);
-    send(sock, pkt, sizeof(pkt), 0);
-    uplodFile(sock, filePth);
-    valread = read(sock, buffer, BUFSIZ);
-    if (buffer[0] == 's')
-    {
-        printf("Data received by server ############################\n");
-    }
-    else
-    {
-        printf("error\n");
-    }
-}
-
-void uplodFile(int sock, char filePth[])
-{
-    ...
-    fd = open(filePth, O_RDONLY);
-    if (fstat(fd, &file_stat) < 0)
-        printf("errorrr");
-    ...
-    remData = file_stat.st_size;
-    offset = 0;
-    /* Sending file data */
-    while (((sentBytes = sendfile(sock, fd, &offset, BUFSIZ)) > 0) && (remData > 0))
-    {
-        remData -= sentBytes;
-    }
-    close(fd);
-}
-```
-### Server
-- Porgram membaca string yang dikirim oleh client dan memcocokan dengan command yang tersedia
-```c
-read(new_socket, cmd, BUFSIZ);
-printf("Command : %s\n", cmd);
-```
-
-- Jika command yang diterima adalah `add` pogram harus membaca data yang dikirimkan oleh client dan disimpan di `files.tsv` sesuai format yang ada.
-- Setelah client mengirim file dengan fungsi `uploadFile()`. Pada sisi server, server menjalankan fungsi `downFile()` yang berfungsi untuk menerima file yang dikirimkan oleh client. Dimana fungsi ini membuat file baru dengan nama sesuai namafile yang dikirm client, dan mengisinya dengan data file yang juga dikirim oleh client.
-```c
-...
-if (strstr(cmd, "a"))
-{
-    ...
-    valread = read(new_socket, buffer, BUFSIZ);
-
-    buf[i] = strtok(buffer, "\t");
-    while (buf[i] != NULL)
-    {
-        buf[++i] = strtok(NULL, "\t");
-    }
-    downFile(new_socket, buf[0]);
-    FILE *fp;
-    fp = fopen("files.tsv", "a+");
-
-    fprintf(fp, "%s\t%s\t%s\n", buf[0], buf[1], buf[2]);
-    send(new_socket, "s", BUFSIZ, 0);
-
-    fclose(fp);
-    ...
-}
-
-void downFile(int sock, char fileName[])
-{
-    ...
-    recv(sock, bufFile, BUFSIZ, 0);
-    fileSize = atoi(bufFile);
-    fprintf(stdout, "File size : %d\n", fileSize);
-
-    sprintf(filePth, "FILES/%s", fileName);
-    printf("FILE PATH : %s\n", filePth);
-    rcvdFile = fopen(filePth, "w");
-    if (rcvdFile == NULL)
-    {
-        printf("Failed to open file\n");
-
-        exit(EXIT_FAILURE);
-    }
-
-    remData = fileSize;
-
-    while ((remData > 0) && ((len = recv(sock, bufFile, BUFSIZ, 0)) > 0))
-    {
-        fwrite(bufFile, sizeof(char), len, rcvdFile);
-        remData -= len;
-    }
-    fclose(rcvdFile);
-}
-```
+- 
 
 
+## Soal 2
+
+### Sub Soal A
+
+Pada soal ini, kita diminta untuk melakukan suatu operasi pada dua buah matrix, yakni matrixA 4 * 3 dan matrixB 3 * 6. Kedua matrix tersebut akan dimasukkan menggunakan fungsi `scanf`, kemudian dilakukan perkalian kedua matrix tersebut dan terakhir akan dilakukan penyimpanan matrixHasil untuk selanjutnya digunakan pada soal2b.c.
