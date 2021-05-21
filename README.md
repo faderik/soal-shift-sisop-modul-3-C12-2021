@@ -235,4 +235,4 @@ printf("Product of entered Matrix:\n");
 
 ### Sub Soal B
 
-Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub soal 2a](README.md#sub-soal-a) dengan 
+Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub soal 2a](README.md#sub-soal-a) dengan suatu matrix matrixC yang memiliki ukuran yang sama (4 * 6). Pada sub soal ini, kita kembali diminta memasukkan isi dari matrixC. Nantinya, setiap elemen matrix hasil operasi sub soal sebelumnya akan dilakukan operasi pengurangan dengan setiap elemen matrixC. 
