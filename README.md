@@ -322,7 +322,7 @@ void *process(void* arg){
 
 ### Sub Soal C
 
-Pada soal ini, kita diminta untuk menggunakan thread dalam mengecek 5 proses teratas dalam program kita. Untuk itu digunakan 3 fungsi yang telah dicantumkan pada soal shift, yakni "ps aux", "sort -nrk 3,3", dan "head -5". Di bawah ini merupakan program nya yang dikombinasikan dengan pipe IPC.
+Pada soal ini, kita diminta untuk menggunakan thread dalam mengecek 5 proses teratas dalam program kita. Untuk itu digunakan 3 fungsi yang telah dicantumkan pada soal shift, yakni `ps aux`, `sort -nrk 3,3`, dan `head -5`. Di bawah ini merupakan program nya yang dikombinasikan dengan pipe IPC.
 
 ``` cpp
 int main() {
@@ -393,9 +393,3 @@ if (pipe(fd1)==-1) {
 }
 
 ```
-
-
-
-
-
-
