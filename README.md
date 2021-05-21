@@ -239,6 +239,7 @@ Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub so
 
 #### Memasukkan matrixC
 
+``` cpp
     printf("Enter the elements of MatrixC\n");
 
     for (i = 0 ; i < 4 ; i++ ){
@@ -246,9 +247,11 @@ Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub so
       		scanf("%d", &MatrixC[i][j]);
 	}
     }
+```
     
 #### Melakukan pengecekan
 
+``` cpp
     for(i = 0; i < 4; i++){
         for(j = 0; j < 6; j++){
 	    nullCheck = false;
@@ -257,5 +260,61 @@ Pada soal ini, kita diminta untuk mengoperasikan matriks hasil perkalian [Sub so
 
             subs = value[i][j] - MatrixC[i][j];			// Melakukan pengurangan tiap elemen antar matrix
             if(value[i][j] == 0 || MatrixC[i][j] == 0) 
-	    	nullCheck = true;				// Apabila ada elemen yang 0, 
-#### 
+	    	nullCheck = true;				// Apabila ada elemen yang 0, maka nullCheck bernilai true
+```
+
+
+#### Fungsi-fungsi yang digunakan
+
+##### Faktorial
+
+``` cpp
+long long faktorial (int n) {
+    if (n <= 1) return 1;				// untuk bilangan 0 atau 1, mengembalikan nilai 1
+    else return n * faktorial( n - 1);
+}
+
+long long reducer(int n){
+	if (n == subs) return 1;
+        else return n * reducer(n - 1);
+}
+
+void *process(void* arg){
+	long long num = *(long long*)arg;
+	if(nullCheck)					// Apabila selisih elemen antar matrix = 0 (nullCheck true)
+		printf("0 ");				// maka dicetak nilai 0
+	else if(subs < 1)				// Apabila selisih elemen antar matrix < 1 
+		printf("%lld ", faktorial(num));	// dicetak faktorial bilangan itu sendiri
+        else 						// Apabila selisih elemen antar matrix > 1 
+		printf("%lld ", reducer(num));		// dicetak reducer bilangan tersebut
+}
+```
+
+##### Pembuatan thread
+
+``` cpp
+    int num;
+    key_t key = 1234;
+    int (*value)[6];
+
+    int shmid = shmget(key, sizeof(int[4][6]), IPC_CREAT | 0666);
+    value = shmat(shmid, NULL, 0);
+
+    pthread_t tid[24];
+    
+                pthread_create(&tid[m], NULL, &process, val);
+            sleep(1);
+            m++;
+        }
+        printf("\n");
+    }
+
+    for (i = 0; i < m; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
+    shmdt(value);
+    shmctl(shmid, IPC_RMID, NULL);
+    
+
+```
