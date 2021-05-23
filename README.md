@@ -1021,13 +1021,14 @@ Pada pengerjaan soal 2 ini, kami menemukan kendala seperti :
 
 ## Soal 3
 Pada soal 3 diminta untuk membuat program c menggunakan thread untuk melakukan pengkategorian file berdasarkan ekstensinya. dimana akan disimpan di folder bernama ekstensinya di current working directiori. contoh hasil pengkategorian :
- |-jpg
+```
+|-jpg
 	|--file1.jpg
  |-c
  	|--file2.c
  |-zip
  	|--file3.zip
-
+```
 ### Soal A
 Untuk soal a diminta untuk mengkategorikan file yang diberikan dengan argumen `-f` diikuti oleh path kepada file yang diminta di kategorikan. Jika file berhasil dikategorikan maka mengeluarkan `Berhasil Dikategorikan` Jika gagal mengeluarkan pesan `Sad, gagal :(`. Untuk caranya pertama akan menghitung berapa jumlah file yang akan dikategorikan dengan cara `argc-2` karena 2 argumen pertama merupakan jalan program dan argumen `-f`. Kemudian membuat thread dengan looping sejumlah file yang diminta dengan menggunakan `pthread_create( &(tid[i-2]), NULL, moveFile, (void*) argv[i]);` dimana terdapat moveFile yang berfungsi untuk memindahkan file dengan pertama melakukan pengecekan apakah file yang diberikan ada dan merupakan file reguler. Oleh karena itu digunakan fungsi checkExistAndRegFile menggunakan `S_ISREG`.
 ``` cpp
