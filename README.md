@@ -1013,6 +1013,11 @@ if (pipe(fd1)==-1) {
 <br><br>
 </p>
 
+### Kendala Saat Pengerjaan
+
+Pada pengerjaan soal 2 ini, kami menemukan kendala seperti :
+- Kebingungan menggunakan pipe pada soal2c, dimana seharusnya dilakukan duplicate dan close, sehingga penceakan 5 proses teratas tidak sesuai dengan yang diharapkan pada soal shift.
+
 
 ## Soal 3
 
