@@ -1020,8 +1020,232 @@ Pada pengerjaan soal 2 ini, kami menemukan kendala seperti :
 
 
 ## Soal 3
+Pada soal 3 diminta untuk membuat program c menggunakan thread untuk melakukan pengkategorian file berdasarkan ekstensinya. dimana akan disimpan di folder bernama ekstensinya di current working directiori. contoh hasil pengkategorian :
+`|-jpg
+	|--file1.jpg
+|-c
+	|--file2.c
+|-zip
+	|--file3.zip
+`
 
+### Soal A
+Untuk soal a diminta untuk mengkategorikan file yang diberikan dengan argumen `-f` diikuti oleh path kepada file yang diminta di kategorikan. Jika file berhasil dikategorikan maka mengeluarkan `Berhasil Dikategorikan` Jika gagal mengeluarkan pesan `Sad, gagal :(`. Untuk caranya pertama akan menghitung berapa jumlah file yang akan dikategorikan dengan cara `argc-2` karena 2 argumen pertama merupakan jalan program dan argumen `-f`. Kemudian membuat thread dengan looping sejumlah file yang diminta dengan menggunakan `pthread_create( &(tid[i-2]), NULL, moveFile, (void*) argv[i]);` dimana terdapat moveFile yang berfungsi untuk memindahkan file dengan pertama melakukan pengecekan apakah file yang diberikan ada dan merupakan file reguler. Oleh karena itu digunakan fungsi checkExistAndRegFile menggunakan `S_ISREG`.
+``` cpp
 
+bool checkExistAndRegFile(char *basePath)
+{
+    struct stat buffer;
+    int exist = stat(basePath,&buffer);
+    if(exist == 0)
+    {
+        if( S_ISREG(buffer.st_mode) ) return true;
+        else return false;
+    }
+    else  
+        return false;
+}
+```
+Kemudian jika merupakan file reguler dan ada, maka akan mengambil ekstensi file menggunakan fungsi `getFileExt` dimana akan dilihat ekstensinya, jika tidak ada ekstensi maka akan dikategorikan sebagai `Unknown` dan jika ekstensinya sama dengan nama file maka akan dikategorikan sebagai `Hidden`. 
+``` cpp
+void getFileExt(char* fileName, char *exten)
+{
+    char *ext = strchr(fileName, '.');
+    if (ext == NULL) {
+        strcpy(exten,"Unknown");
+    } 
+    else if (ext == fileName){
+        strcpy(exten,"Hidden");
+    }
+    else
+    {
+        strcpy(exten,ext+1);
+    }
+}
+```
+Kemudian setelah mendapat ekstensinya jika bukan Hidden atau Unknown maka akan dilakukan fungsi tolower agar ekstensi yang digunakan tidak case sensitive, dan kemudian mengambil current working direktori menggunakan `getcwd` dan membuat folder dengan `mkdir` kemudian dipindahkan file kepada destinasinya.
+```cpp
+void *moveFile( void *arg )
+{
+    char basePath[PATH_MAX];
+    strcpy(basePath,(char *) arg);
 
+    if(checkExistAndRegFile(basePath))
+    {
+        const char *p="/";
+        char *a,*b;
+        char fullPath[PATH_MAX];
+        strcpy(fullPath,(char *) arg);
 
+        char fileName[100];
 
+        for( a=strtok_r(fullPath,p,&b) ; a!=NULL ; a=strtok_r(NULL,p,&b) ) {
+            memset(fileName,0,sizeof(fileName));
+            strcpy(fileName,a);
+        }
+
+        char ext[PATH_MAX];
+        getFileExt(fileName,ext);
+
+        if(strcmp(ext,"Hidden") != 0 && strcmp(ext,"Unknown") != 0)
+        {
+            for(int i = 0; i<strlen(ext); i++)
+            {
+                ext[i] = tolower(ext[i]);
+            }
+        }
+	
+	char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {
+            perror("getcwd() error");
+            return (void *) 0;
+        }
+	
+        char destDir[PATH_MAX];
+        sprintf(destDir,"%s/%s",cwd,ext);
+        mkdir(destDir,0777);
+
+        char dest[PATH_MAX];
+        sprintf(dest,"%s/%s/%s",cwd,ext,fileName);
+        rename(basePath,dest);
+        return (void *) 1;
+    }
+    else return (void *) 0;
+}
+```
+Kemudian setelah selesai membuat threadnya maka akan dijoinkan kembali dan akan print pesan sesuai kondisi soal dan akan mereturn 0 untuk menyelesaikan program.
+```cpp
+    else if(!strcmp(argv[1],"-f")) 
+    {
+
+        if(argc<3)
+        {
+            printf ("Need Minimal 1 Path to File\n");
+            exit(1);
+            return 0;
+        }
+
+        pthread_t tid[argc-2];
+
+        for(int i = 2; i<argc; i++)
+        {
+            pthread_create( &(tid[i-2]), NULL, moveFile, (void*) argv[i]);
+        }
+
+        for (int i = 0; i < argc-2; i++)
+        {
+            int returnValue;
+            void *ptr;
+            pthread_join( tid[i], &ptr);
+            returnValue = (int) ptr;
+            if(returnValue) printf("File %d : Berhasil Dikategorikan\n", i+1);
+            else printf("File %d : Sad, gagal :(\n", i+1);
+        }
+        
+        return 0;
+    }
+```
+
+### Soal B
+Untuk soal b diminta untuk mengkategorikan semua file pada direktori yang diberikan. Pertama disimpan path folder tersebut, kemudian menghitung dan melist file secara rekursiv dan akan disimpan nama file tersebut di variabel global. 
+```cpp
+int listFilesRecursively(char *basePath, int *fileCount)
+{
+    char path[PATH_MAX];
+    struct dirent *dp;
+    DIR *dir = opendir(basePath);
+
+    if (!dir)
+        return 0;
+
+    while ((dp = readdir(dir)) != NULL)
+    {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {
+            char fullPath[PATH_MAX];
+            sprintf(fullPath,"%s/%s",basePath,dp->d_name);
+            if(checkExistAndRegFile(fullPath))
+            {
+                sprintf(fileList[*fileCount],"%s",fullPath);
+                *fileCount += 1;
+            }
+            strcpy(path, basePath);
+            strcat(path, "/");
+            strcat(path, dp->d_name);
+
+            listFilesRecursively(path,fileCount);
+        }
+    }
+
+    closedir(dir);
+    return 1;
+}
+```
+Kemudian membuat thread sesuai file yang diberikan dan setelah dicreate akan dijoinkan kembali. dan akan memprint pesan sesuai soal.
+```cpp
+ else if(!strcmp(argv[1],"-d")) 
+    {
+        strcpy(baseDir,argv[2]);
+    }
+  int fileCount = 0;
+    if(!listFilesRecursively(baseDir, &fileCount))
+    {
+        printf("Yah, gagal disimpan :(\n");
+        return 0;
+    }
+
+    pthread_t tid[fileCount];
+    for(int i = 0; i<fileCount; i++)
+    {
+        pthread_create( &(tid[i]), NULL, moveFile, (void*) fileList[i]);
+    }
+
+    for (int i = 0; i < fileCount; i++)
+    {
+        void *ptr;
+        pthread_join( tid[i], &ptr);
+    }
+
+    if(!strcmp(argv[1],"-d")) printf("Direktori sukses disimpan!\n");
+    return 0;
+```
+
+### Soal C
+Untuk soal c sama seperti soal b tetapi direktori yang digunakan adalah current working direktori, oleh karena itu yang disimpan adalah cwd tersebut menggunakan `getcwd` dan akan berjalan sama seperti soal B.
+```cpp
+if(!strcmp(argv[1],"*")){
+    	if(getcwd(baseDir, sizeof(baseDir)) == NULL){
+    		perror("getcwd() error");
+    		return 0;
+    	}
+    }
+ int fileCount = 0;
+    if(!listFilesRecursively(baseDir, &fileCount))
+    {
+        printf("Yah, gagal disimpan :(\n");
+        return 0;
+    }
+
+    pthread_t tid[fileCount];
+    for(int i = 0; i<fileCount; i++)
+    {
+        pthread_create( &(tid[i]), NULL, moveFile, (void*) fileList[i]);
+    }
+
+    for (int i = 0; i < fileCount; i++)
+    {
+        void *ptr;
+        pthread_join( tid[i], &ptr);
+    }
+
+    if(!strcmp(argv[1],"-d")) printf("Direktori sukses disimpan!\n");
+    return 0;
+```
+### Soal D
+Untuk soal d diminta menyimpan file tanpa ekstensi kedalam folder `Unknown` dan file hidden ke dalam folder `Hidden`, untuk hal itu digunakan pengecekan ekstensi yang jika tidak memiliki ekstensi maka akan dikategorikan ke dalam Unknown dan jika terdapat titik diawal atau ekstensi sama dengan nama file akan masuk ke dalam Hidden.
+
+### Soal E
+Setiap file dijalankan oleh thread.
+
+### Kendala
+Untuk kendala yang dihadapi adalah Waktu saat pengerjaan karena berbarengan dengan UTS sehingga tidak bisa fokus mengerjakan soal
